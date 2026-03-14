@@ -50,11 +50,11 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }) {
           email: data.email,
           password: data.password
         });
+        router.push(`/auth/verify?email=${encodeURIComponent(data.email)}`); 
         onClose(); 
         reset(); 
         
         // Push to verify page with their email
-        router.push(`/verify?email=${encodeURIComponent(data.email)}`); 
       }
     } catch (err) {
       // Handles the Go backend's custom fiber.Map errors
