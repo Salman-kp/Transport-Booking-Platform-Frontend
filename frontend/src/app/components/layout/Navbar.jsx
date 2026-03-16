@@ -94,7 +94,7 @@ export default function Navbar() {
                 />
               </motion.div>
               <div className="flex flex-col justify-center overflow-hidden">
-                <span className={`font-black bg-gradient-to-br from-emerald-600 to-teal-400 bg-clip-text text-transparent tracking-tight leading-none transition-all duration-300
+                <span translate='no' className={`font-black bg-gradient-to-br from-emerald-600 to-teal-400 bg-clip-text text-transparent tracking-tight leading-none transition-all duration-300
                   ${isScrolled ? 'text-xl' : 'text-2xl'}
                 `}>
                   TRIPneO

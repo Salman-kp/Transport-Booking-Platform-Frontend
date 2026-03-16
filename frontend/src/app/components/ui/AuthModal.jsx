@@ -12,6 +12,7 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }) {
   const [error, setError] = useState('');
   
   // States to hold credentials for auto-login after OTP success
+  const [pendingName, setPendingName] = useState(''); // <-- Added pendingName
   const [pendingEmail, setPendingEmail] = useState('');
   const [pendingPassword, setPendingPassword] = useState('');
   
@@ -31,6 +32,7 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }) {
       setView(initialView);
       setError('');
       setCode(Array(6).fill(''));
+      setPendingName(''); // <-- Reset name
       setPendingEmail('');
       setPendingPassword('');
       document.body.style.overflow = 'hidden';
@@ -61,17 +63,22 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }) {
           password: data.password 
         });
         
-        const displayName = data.email.split('@')[0];
-        setAuth({ email: data.email, name: displayName }); 
+        // Try to get the name from the backend response, fallback to email prefix
+        const user = response.data?.user || {};
+        const displayName = user.name || data.email.split('@')[0];
+        
+        setAuth({ email: data.email, name: displayName, ...user }); 
         handleClose(); 
       } else {
         // Register User
         await api.post('/auth/register', {
+          name: data.name, // <-- Send the name to the Go backend
           email: data.email,
           password: data.password
         });
         
         // Save credentials temporarily for auto-login later
+        setPendingName(data.name); // <-- Store the name for the Navbar
         setPendingEmail(data.email);
         setPendingPassword(data.password);
         
@@ -138,9 +145,8 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }) {
         password: pendingPassword 
       });
 
-      // 3. Update Zustand Store (Changes Navbar automatically)
-      const displayName = pendingEmail.split('@')[0];
-      setAuth({ email: pendingEmail, name: displayName }); 
+      // 3. Update Zustand Store (Use the stored pendingName instead of splitting email)
+      setAuth({ email: pendingEmail, name: pendingName }); 
 
       // 4. Close the modal seamlessly
       handleClose();
