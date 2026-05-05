@@ -7,8 +7,10 @@ import Image from 'next/image';
 import { api } from '@/lib/axios';
 import { authApi } from '@/lib/authApi';
 import { useAuthStore } from '@/lib/store';
+import { useRouter } from 'next/navigation';
 
 export default function AuthModal({ isOpen, onClose, initialView = 'login' }) {
+  const router = useRouter();
   const [view, setView] = useState(initialView);
   const [error, setError] = useState('');
   
@@ -72,6 +74,11 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }) {
           user: { email: data.email, name: displayName, ...user },
           token: response?.token || null,
         });
+        
+        if (user.role === 'admin' || user.role === 'superadmin') {
+          router.push('/admin');
+        }
+        
         handleClose(); 
       } else {
         // Register User
@@ -149,7 +156,7 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }) {
         password: pendingPassword 
       });
 
-      // 3. Update Zustand Store (Use the stored pendingName instead of splitting email)
+      // 4. Update Zustand Store (Use the stored pendingName instead of splitting email)
       setAuth({
         user: {
           email: pendingEmail,
@@ -159,7 +166,12 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }) {
         token: loginResponse?.token || null,
       });
 
-      // 4. Close the modal seamlessly
+      // 5. Redirect if admin
+      if (loginResponse?.user?.role === 'admin' || loginResponse?.user?.role === 'superadmin') {
+        router.push('/admin');
+      }
+
+      // 6. Close the modal seamlessly
       handleClose();
 
     } catch (err) {

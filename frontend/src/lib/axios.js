@@ -9,7 +9,7 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
   // CRITICAL: This allows the browser to receive and send the HttpOnly cookie
-  withCredentials: true, 
+  withCredentials: true,
 });
 
 api.interceptors.request.use((config) => {
@@ -27,10 +27,10 @@ api.interceptors.response.use(
     // If the API Gateway returns 401 (Unauthorized), the cookie is expired/invalid
     if (error.response?.status === 401) {
       useAuthStore.getState().logout();
-      
-      // Trigger global Login Modal instead of silent redirect
+
+      // If in browser, redirect to home page to avoid "white screen" in protected routes
       if (typeof window !== 'undefined') {
-        useAuthStore.getState().setAuthModalOpen(true);
+        window.location.href = '/';
       }
     }
     return Promise.reject(error);

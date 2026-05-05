@@ -134,8 +134,8 @@ export default function BusConfirmationPage() {
     );
   }
 
-  const formatTime = (iso) => iso ? new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--';
-  const formatDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : 'N/A';
+  const formatTime = (iso) => iso ? new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }) : '--:--';
+  const formatDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }) : 'N/A';
 
   const isCancelled = bookingData.status === 'CANCELLED';
 
@@ -327,7 +327,7 @@ export default function BusConfirmationPage() {
             <div className="bg-surface-container-low border border-gray-100 rounded-2xl p-8">
               <h4 className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-5">Cancellation Policy</h4>
               <ul className="space-y-4">
-                {[{ time: 'Before 24 hours', fee: '10% Fee' }, { time: '12-24 hours', fee: '25% Fee' }, { time: 'Within 12 hours', fee: 'No Refund' }].map((item, i) => (
+                {[{ time: 'Standard Refund Policy 120 hours', fee: '90% Fee' },{ time: 'Mid-tier Refund Policy 48 hours', fee: '60% Fee' }, { time: 'Last Minute Refund Policy  24 hours', fee: '25% Fee' }, { time: 'No Refund Policy 0-24 hours', fee: 'No Refund' }].map((item, i) => (
                   <li key={i} className="flex items-center justify-between">
                     <span className="text-xs text-on-surface-variant font-medium">{item.time}</span>
                     <span className="text-xs font-bold text-secondary">{item.fee}</span>
