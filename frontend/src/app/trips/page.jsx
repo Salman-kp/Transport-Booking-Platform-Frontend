@@ -332,8 +332,9 @@ export default function MyTripsPage() {
                 <div className="space-y-6">
                   {filteredBuses.length > 0 ? (
                     filteredBuses.map((booking, idx) => {
-                      const busDate = new Date(booking.departure_time || booking.booked_at || booking.created_at);
-                      const arrivalDate = booking.arrival_time ? new Date(booking.arrival_time) : null;
+                      const instanceDetails = busDetailsMap[booking.bus_instance_id];
+                      const busDate = new Date(instanceDetails?.departure_at || booking.departure_time || booking.booked_at || booking.created_at);
+                      const arrivalDate = instanceDetails?.arrival_at ? new Date(instanceDetails.arrival_at) : (booking.arrival_time ? new Date(booking.arrival_time) : null);
 
                       return (
                         <motion.div
@@ -366,8 +367,8 @@ export default function MyTripsPage() {
                               <div className="flex flex-col">
                                 <span className="text-4xl md:text-5xl font-black text-primary tracking-tighter">
                                   {busDetailsMap[booking.bus_instance_id]?.departure_at 
-                                    ? new Date(busDetailsMap[booking.bus_instance_id].departure_at).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', hour12: false })
-                                    : busDate.toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                    ? new Date(busDetailsMap[booking.bus_instance_id].departure_at).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })
+                                    : busDate.toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })}
                                 </span>
                                 <span className="text-sm font-bold text-on-surface mt-1">
                                   {busDetailsMap[booking.bus_instance_id]?.bus?.origin_stop?.city || booking.origin || 'Origin'}
@@ -386,8 +387,8 @@ export default function MyTripsPage() {
                               <div className="flex flex-col text-right">
                                 <span className="text-4xl md:text-5xl font-black text-primary tracking-tighter">
                                   {busDetailsMap[booking.bus_instance_id]?.arrival_at 
-                                    ? new Date(busDetailsMap[booking.bus_instance_id].arrival_at).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', hour12: false })
-                                    : (arrivalDate ? arrivalDate.toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--')}
+                                    ? new Date(busDetailsMap[booking.bus_instance_id].arrival_at).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })
+                                    : (arrivalDate ? arrivalDate.toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }) : '--:--')}
                                 </span>
                                 <span className="text-sm font-bold text-on-surface mt-1">
                                   {busDetailsMap[booking.bus_instance_id]?.bus?.destination_stop?.city || booking.destination || 'Destination'}
@@ -398,7 +399,7 @@ export default function MyTripsPage() {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-dashed border-outline-variant/50">
                               <div>
                                 <p className="text-[9px] font-black text-outline uppercase tracking-widest mb-1">Date</p>
-                                <p className="text-sm font-bold">{busDate.toLocaleDateString("en-IN", { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                                <p className="text-sm font-bold">{busDate.toLocaleDateString("en-IN", { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })}</p>
                               </div>
                               <div>
                                 <p className="text-[9px] font-black text-outline uppercase tracking-widest mb-1">Seat(s)</p>

@@ -82,4 +82,35 @@ export const flightApi = {
     const { data } = await api.get(`/flights/status/${pnr}`);
     return data?.data || data;
   },
+
+  // Admin Endpoints
+  admin: {
+    getAllBookings: async () => {
+      const { data } = await api.get('/flights/admin/bookings');
+      return data?.bookings || [];
+    },
+    updateBookingStatus: async (bookingId, status) => {
+      const { data } = await api.put(`/flights/admin/bookings/${bookingId}/status`, { status });
+      return data;
+    },
+    createFlight: async (flightData) => {
+      const { data } = await api.post('/flights/admin/flights', flightData);
+      return data;
+    },
+    updateFlight: async (flightId, updates) => {
+      const { data } = await api.put(`/flights/admin/flights/${flightId}`, updates);
+      return data;
+    },
+    deleteFlight: async (flightId) => {
+      const { data } = await api.delete(`/flights/admin/flights/${flightId}`);
+      return data;
+    },
+    updateFares: async (instanceId, economyPrice, businessPrice) => {
+      const { data } = await api.patch(`/flights/admin/flights/${instanceId}/fares`, { 
+        economy_price: economyPrice, 
+        business_price: businessPrice 
+      });
+      return data;
+    },
+  },
 };

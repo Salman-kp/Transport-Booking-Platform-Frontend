@@ -1,7 +1,6 @@
 import './globals.css';
 import { Noto_Serif, Inter } from 'next/font/google';
-import Navbar from '@/app/components/layout/Navbar';
-import ChatWidget from '@/app/components/layout/ChatWidget';
+import NavigationWrapper from '@/app/components/layout/NavigationWrapper';
 
 export const metadata = {
   title: 'Tripneo | Digital Concierge Flight Booking',
@@ -27,12 +26,10 @@ export default function RootLayout({ children }) {
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased min-h-screen bg-surface text-on-surface selection:bg-secondary-container">
-        <Navbar />
-        <main className="flex-grow">
+      <body suppressHydrationWarning className="font-body antialiased min-h-screen bg-surface text-on-surface selection:bg-secondary-container">
+        <NavigationWrapper>
           {children}
-        </main>
-        <ChatWidget />
+        </NavigationWrapper>
       </body>
     </html>
   );

@@ -2,17 +2,18 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   UserCircle, LogOut, Bus, Train, Plane, CarTaxiFront,
-  ChevronDown, Ticket, User, Home
+  ChevronDown, Ticket, User, Home, Shield
 } from 'lucide-react';
 import AuthModal from '../ui/AuthModal';
 import { useAuthStore } from '@/lib/store';
 import { authApi } from '@/lib/authApi';
 
 export default function Navbar() {
+  const router = useRouter();
   const [modalConfig, setModalConfig] = useState({ isOpen: false, view: 'login' });
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -43,11 +44,12 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     setIsProfileOpen(false);
-    const confirmLogout = window.confirm("Are you sure you want to log out?");
-    if (!confirmLogout) return;
-    try { await authApi.logout(); }
-    catch (error) { console.error("Logout failed", error); }
-    finally { logout(); }
+    // Immediately clear Zustand store so the UI updates at once
+    logout();
+    // Clear the HttpOnly cookie via backend (fire-and-forget)
+    try { await authApi.logout(); } catch (_) {}
+    // Redirect to home page
+    router.push('/');
   };
 
   const navLinks = [
@@ -125,6 +127,14 @@ export default function Navbar() {
                     {isProfileOpen && (
                       <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute right-0 top-full mt-3 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
                         <div className="p-2 space-y-1">
+                          {(user?.role === 'admin' || user?.role === 'superadmin') && (
+                            <>
+                              <Link href="/admin" onClick={() => setIsProfileOpen(false)} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-emerald-700 hover:bg-emerald-50 rounded-xl transition-colors">
+                                <Shield size={18} className="text-emerald-500" /> Admin Dashboard
+                              </Link>
+                              <div className="h-px bg-slate-100 my-1 mx-2"></div>
+                            </>
+                          )}
                           <Link href="/profile" onClick={() => setIsProfileOpen(false)} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-emerald-600 rounded-xl transition-colors"><User size={18} className="text-slate-400" /> Profile</Link>
                           <div className="h-px bg-slate-100 my-1 mx-2"></div>
                           <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"><LogOut size={18} className="text-red-500" /> Logout</button>
