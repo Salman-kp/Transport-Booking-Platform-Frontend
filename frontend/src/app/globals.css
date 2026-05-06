@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @config "../../tailwind.config.js";
 
+:root {
+  --font-noto-serif: 'Noto Serif', Georgia, Cambria, 'Times New Roman', Times, serif;
+  --font-inter: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
 @layer base {
   body {
     @apply bg-slate-50 text-slate-900 antialiased overflow-x-hidden;

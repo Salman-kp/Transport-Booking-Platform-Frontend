@@ -45,8 +45,13 @@ export default function SeatSelectionPage() {
 
   const allSeats = useMemo(() => [...businessSeats, ...economySeats], [businessSeats, economySeats]);
 
+  const fareClass = (selectedFare?.seat_class || selectedFare?.class || 'ECONOMY').toUpperCase();
+
   const handleSeatClick = (seat) => {
     if (!seat?.is_available) return;
+
+    // Prevent selecting seats from a different class than the fare
+    if (seat.seat_class?.toUpperCase() !== fareClass) return;
 
     setSelectedSeatNumbers((prev) => {
       if (prev.includes(seat.seat_number)) {
@@ -83,14 +88,17 @@ export default function SeatSelectionPage() {
 
   const renderSeat = (seat) => {
     const isSelected = selectedSeatNumbers.includes(seat.seat_number);
+    const isWrongClass = seat.seat_class?.toUpperCase() !== fareClass;
+    const isDisabled = !seat.is_available || isWrongClass;
     return (
       <button
         key={seat.seat_number}
         type="button"
         onClick={() => handleSeatClick(seat)}
-        disabled={!seat.is_available}
+        disabled={isDisabled}
+        title={isWrongClass ? `Requires ${seat.seat_class} fare` : ''}
         className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center text-[10px] font-bold transition-all duration-300 rounded-sm relative group ${
-          !seat.is_available
+          isDisabled
             ? 'bg-outline-variant/10 text-outline/20 cursor-not-allowed'
             : isSelected
               ? 'bg-secondary text-on-secondary shadow-lg shadow-secondary/20 z-10'
