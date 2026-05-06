@@ -10,6 +10,7 @@ import {
   MapPin as MapPinIcon, ShieldCheck, Globe2, CreditCard, Headset,
   Sparkles, Zap, Timer
 } from 'lucide-react';
+import { useAuthStore } from '@/lib/store';
 
 const services = [
   { name: 'Flights', icon: Plane, id: 'flight', link: '/flights' },
@@ -45,6 +46,17 @@ export default function LandingPage() {
   const [toLocation, setToLocation] = useState('Bangalore');
   const [currentBg, setCurrentBg] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
+  const { user, isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (user?.role === 'admin' || user?.role === 'superadmin') {
+        router.push('/admin');
+      } else if (user?.role === 'operator') {
+        router.push('/operator');
+      }
+    }
+  }, [isAuthenticated, user, router]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);

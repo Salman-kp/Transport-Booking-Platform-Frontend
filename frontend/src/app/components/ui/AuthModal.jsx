@@ -77,6 +77,8 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }) {
         
         if (user.role === 'admin' || user.role === 'superadmin') {
           router.push('/admin');
+        } else if (user.role === 'operator') {
+          router.push('/operator');
         }
         
         handleClose(); 
@@ -166,9 +168,11 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }) {
         token: loginResponse?.token || null,
       });
 
-      // 5. Redirect if admin
+      // 5. Redirect if admin or operator
       if (loginResponse?.user?.role === 'admin' || loginResponse?.user?.role === 'superadmin') {
         router.push('/admin');
+      } else if (loginResponse?.user?.role === 'operator') {
+        router.push('/operator');
       }
 
       // 6. Close the modal seamlessly

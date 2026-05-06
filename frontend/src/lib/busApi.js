@@ -103,8 +103,15 @@ export const busApi = {
       const { data } = await api.get('/buses/admin/analytics/operators');
       return data;
     },
-    getUpcomingTrips: async (limit = 100) => {
-      const { data } = await api.get('/buses/admin/analytics/upcoming', { params: { limit } });
+    getUpcomingTrips: async (limit = 100, month, year) => {
+      const now = new Date();
+      const { data } = await api.get('/buses/admin/analytics/upcoming', {
+        params: {
+          limit,
+          month: month ?? now.getMonth() + 1,
+          year: year ?? now.getFullYear(),
+        },
+      });
       return data;
     },
     getBookings: async (page = 1, limit = 20) => {
@@ -225,12 +232,21 @@ export const busApi = {
       const { data } = await api.get('/buses/operators/inventory');
       return data?.data || data;
     },
-    loadInventory: async (payload) => {
-      const { data } = await api.post('/buses/operators/inventory/load', payload);
+    // Trip Instance Management (New)
+    getInstances: async () => {
+      const { data } = await api.get('/buses/operators/instances');
       return data?.data || data;
     },
-    getInventoryBookings: async (inventoryId) => {
-      const { data } = await api.get(`/buses/operators/inventory/${inventoryId}/bookings`);
+    deleteInstance: async (id) => {
+      const { data } = await api.delete(`/buses/operators/instances/${id}`);
+      return data;
+    },
+    updateInstanceStatus: async (id, status) => {
+      const { data } = await api.put(`/buses/operators/instances/${id}/status`, { status });
+      return data;
+    },
+    getBookings: async () => {
+      const { data } = await api.get('/buses/operators/bookings');
       return data?.data || data;
     },
     getAnalytics: async () => {

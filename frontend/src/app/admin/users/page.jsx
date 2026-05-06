@@ -5,13 +5,24 @@ import { motion } from 'framer-motion';
 import { Search, ShieldAlert, CheckCircle, Loader2, Briefcase, Building2, Phone, Mail, Percent, Hash, X } from 'lucide-react';
 import { api } from '@/lib/axios';
 import { busApi } from '@/lib/busApi';
+import { authApi } from '@/lib/authApi';
 
 export default function UserManagement() {
-  // ─── EXISTING: Role Assignment ────────────────────────────────────────────
+  // ─── Role Assignment ──────────────────────────────────────────────────────
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('user');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  const [lastAssigned, setLastAssigned] = useState(null); // { email, role, permissions }
+
+  // Permission definitions per role (matches backend expectation).
+  // "user" is always included as the base permission for every role.
+  const rolePermissions = {
+    user: ['user'],
+    operator: ['operator'],
+    admin: ['admin'],
+    superadmin: ['superadmin'],
+  };
 
   const handleRoleUpdate = async (e) => {
     e.preventDefault();
@@ -19,17 +30,27 @@ export default function UserManagement() {
 
     setLoading(true);
     setMessage(null);
+    setLastAssigned(null);
+
+    const permissions = rolePermissions[role] ?? [];
 
     try {
-      // Endpoint to assign role as defined in backend register.go
-      await api.post('/auth/admin/assign-role', { email, role });
-      setMessage({ type: 'success', text: `Successfully updated role for ${email} to ${role}.` });
-      setEmail('');
-    } catch (err) {
-      setMessage({
-        type: 'error',
-        text: err.response?.data?.error || err.response?.data?.message || 'Failed to update user role.'
+      // permissions must be sent as an array of strings
+      await authApi.admin.assignRole({
+        email,
+        role,
+        permissions,
       });
+      setLastAssigned({ email, role, permissions });
+      setMessage({ type: 'success', text: `Role "${role}" assigned to ${email}.` });
+      setEmail('');
+      setRole('user');
+    } catch (err) {
+      const errText =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        `Error ${err.response?.status ?? ''}: Failed to update user role.`;
+      setMessage({ type: 'error', text: errText });
     } finally {
       setLoading(false);
     }
@@ -63,14 +84,13 @@ export default function UserManagement() {
     setOpSelectedUser(null);
     setOpUserResults([]);
     try {
-      const { data } = await api.get('/auth/admin/users');
-      const all = data?.users || [];
-      if (all.length === 0) {
+      const users = await authApi.admin.listUsers();
+      if (users.length === 0) {
         setOpMessage({ type: 'error', text: 'No users returned from server. Make sure you are logged in as admin.' });
         return;
       }
       const q = opUserSearch.toLowerCase();
-      const filtered = all.filter(u =>
+      const filtered = users.filter(u =>
         u.email.toLowerCase().includes(q) || (u.name || '').toLowerCase().includes(q)
       );
       setOpUserResults(filtered);
@@ -135,49 +155,72 @@ export default function UserManagement() {
         <p className="text-slate-500 mt-1">Manage platform users and assign administrative roles.</p>
       </div>
 
-      {/* ─── EXISTING: Role Assignment card (unchanged) ─────────────────────── */}
+      {/* ─── Role Assignment card ─────────────────────────────────────────────── */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 mt-8">
-        <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-slate-900 mb-1 flex items-center gap-2">
           <ShieldAlert className="text-emerald-500" /> Role Assignment
         </h2>
+        <p className="text-xs text-slate-400 font-medium mb-6">
+          Only <span className="font-black text-slate-600">superadmins</span> can assign roles.
+          Regular users and operators cannot access this action.
+        </p>
 
         {message && (
-          <div className={`p-4 rounded-xl mb-6 flex items-center gap-3 ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'
+          <div className={`p-4 rounded-xl mb-6 flex items-center gap-3 ${message.type === 'success'
+            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+            : 'bg-red-50 text-red-700 border border-red-200'
             }`}>
             {message.type === 'success' ? <CheckCircle size={20} /> : <ShieldAlert size={20} />}
             <span className="font-medium">{message.text}</span>
           </div>
         )}
 
-        <form onSubmit={handleRoleUpdate} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">User Email</label>
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter user email address"
-                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-900"
-                  required
-                />
-              </div>
+        <form onSubmit={handleRoleUpdate} className="space-y-5">
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">User Email</label>
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter user email address"
+                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-900"
+                required
+              />
             </div>
+          </div>
 
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Assign Role</label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-900"
-              >
-                <option value="user">User</option>
-                <option value="operator">Operator (Bus/Flight)</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
+          {/* Role */}
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Assign Role</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-900"
+            >
+              <option value="user">User — Standard platform user, no special access</option>
+              <option value="operator">Operator — Bus fleet management access</option>
+              <option value="admin">Admin — Platform administration access</option>
+              <option value="superadmin">Superadmin — Full platform control</option>
+            </select>
+          </div>
+
+          {/* Permissions preview */}
+          <div className="rounded-xl border border-slate-100 bg-slate-50 px-5 py-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Permissions that will be assigned</p>
+            {rolePermissions[role].length === 0 ? (
+              <p className="text-xs text-slate-400 italic">No permissions — standard user access only.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {rolePermissions[role].map(p => (
+                  <span key={p} className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-black rounded-full uppercase tracking-wider">
+                    {p}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <motion.button
@@ -190,6 +233,32 @@ export default function UserManagement() {
             {loading ? <Loader2 className="animate-spin" size={20} /> : 'Update Role'}
           </motion.button>
         </form>
+
+        {/* Last assigned result */}
+        {lastAssigned && (
+          <div className="mt-6 p-5 rounded-2xl border border-slate-100 bg-slate-50">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Last Assignment Result</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm font-bold text-slate-700">{lastAssigned.email}</span>
+              <span className="text-slate-300">→</span>
+              <span className="px-2.5 py-1 bg-slate-900 text-white text-xs font-black rounded-lg uppercase tracking-widest">
+                {lastAssigned.role}
+              </span>
+              {lastAssigned.permissions.length > 0 ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400 font-bold">with permissions:</span>
+                  {lastAssigned.permissions.map(p => (
+                    <span key={p} className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-black rounded-full uppercase tracking-wider">
+                      {p}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-xs text-slate-400 italic">no permissions assigned</span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ─── NEW: Register Operator card ─────────────────────────────────────── */}
