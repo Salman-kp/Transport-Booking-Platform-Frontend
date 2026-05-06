@@ -19,6 +19,11 @@ export default function BusManagement() {
   const [showModal, setShowModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Instance month/year filter — defaults to current month & year
+  const now = new Date();
+  const [instanceMonth, setInstanceMonth] = useState(now.getMonth() + 1);
+  const [instanceYear, setInstanceYear] = useState(now.getFullYear());
   
   // UI State
   const [toast, setToast] = useState(null);
@@ -41,7 +46,7 @@ export default function BusManagement() {
     { id: 'pricing', name: 'Pricing Rules', icon: Tag, getApi: busApi.admin.getPricingRules, postApi: busApi.admin.createPricingRule, putApi: (id, payload) => busApi.admin.updatePricingRule(id, payload) },
     { id: 'cancellations', name: 'Cancellation Policies', icon: Shield, getApi: busApi.admin.getCancellationPolicies, postApi: busApi.admin.createCancellationPolicy, putApi: (id, payload) => busApi.admin.updateCancellationPolicy(id, payload) },
     { id: 'types', name: 'Bus Types', icon: Layout, getApi: busApi.admin.getBusTypes, postApi: busApi.admin.createBusType },
-    { id: 'instances', name: 'Instances', icon: Bus, getApi: () => busApi.admin.getUpcomingTrips(100) },
+    { id: 'instances', name: 'Instances', icon: Bus, getApi: () => busApi.admin.getUpcomingTrips(500, instanceMonth, instanceYear) },
   ];
 
   const fetchData = async () => {
@@ -84,7 +89,7 @@ export default function BusManagement() {
     setCurrentPage(1);
     fetchData();
     if (activeTab === 'routes') fetchDropdowns();
-  }, [activeTab]);
+  }, [activeTab, instanceMonth, instanceYear]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -294,6 +299,34 @@ export default function BusManagement() {
               className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-sm font-medium"
             />
           </div>
+
+          {/* Month / Year picker — only for Instances tab */}
+          {activeTab === 'instances' && (
+            <div className="flex items-center gap-2">
+              <select
+                value={instanceMonth}
+                onChange={(e) => { setInstanceMonth(Number(e.target.value)); setCurrentPage(1); }}
+                className="py-2 px-3 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+              >
+                {[
+                  'January','February','March','April','May','June',
+                  'July','August','September','October','November','December'
+                ].map((m, i) => (
+                  <option key={i + 1} value={i + 1}>{m}</option>
+                ))}
+              </select>
+              <select
+                value={instanceYear}
+                onChange={(e) => { setInstanceYear(Number(e.target.value)); setCurrentPage(1); }}
+                className="py-2 px-3 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+              >
+                {Array.from({ length: 5 }, (_, i) => now.getFullYear() - 1 + i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
             {filteredData.length} Items Found
           </div>

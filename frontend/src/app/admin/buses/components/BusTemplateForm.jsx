@@ -74,7 +74,6 @@ export default function BusTemplateForm({ initialData = {}, dropdowns = {}, onSu
       days_of_week: initialData.id 
         ? JSON.stringify(formData.days_of_week.map(Number)) 
         : formData.days_of_week.map(Number),
-      duration_minutes: 0,
       is_active: initialData.is_active ?? true
     };
 

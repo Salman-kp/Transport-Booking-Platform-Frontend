@@ -7,14 +7,16 @@ import ChatWidget from './ChatWidget';
 export default function NavigationWrapper({ children }) {
   const pathname = usePathname();
   const isAdminRoute = pathname?.startsWith('/admin');
+  const isOperatorRoute = pathname?.startsWith('/operator');
+  const hideNav = isAdminRoute || isOperatorRoute;
 
   return (
     <>
-      {!isAdminRoute && <Navbar />}
+      {!hideNav && <Navbar />}
       <main className="flex-grow">
         {children}
       </main>
-      {!isAdminRoute && <ChatWidget />}
+      {!hideNav && <ChatWidget />}
     </>
   );
 }
