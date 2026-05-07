@@ -1,10 +1,10 @@
 'use client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useBookingStore } from '@/lib/store';
 import { flightApi } from '@/lib/flightApi';
 
-export default function FlightTrackerPage() {
+function FlightTrackerContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeBooking = useBookingStore(state => state.activeBooking);
@@ -182,5 +182,21 @@ export default function FlightTrackerPage() {
       </div>
 
     </main>
+  );
+}
+
+export default function FlightTrackerPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="relative w-full h-screen overflow-hidden pt-24 bg-[#0a0a0b]">
+          <div className="flex h-full items-center justify-center">
+            <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+          </div>
+        </main>
+      }
+    >
+      <FlightTrackerContent />
+    </Suspense>
   );
 }

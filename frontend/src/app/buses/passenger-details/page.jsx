@@ -315,8 +315,8 @@ export default function BusPassengerDetailsPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-[10px] uppercase tracking-widest text-outline mb-2">Itinerary</p>
-                  <p className="font-headline text-2xl text-primary">{busSelectedInstance.bus?.origin_stop?.city || busSelectedInstance?.origin} to {busSelectedInstance.bus?.destination_stop?.city || busSelectedInstance?.destination}</p>
-                  <p className="text-sm font-light text-on-surface-variant mt-1">{busSelectedInstance.bus?.operator?.name || 'Bus Operator'} · {busSelectedInstance.bus?.bus_number || busSelectedInstance?.bus_number}</p>
+                  <p className="font-headline text-2xl text-primary">{busSelectedInstance?.bus?.origin_stop?.city || busSelectedInstance?.origin} to {busSelectedInstance?.bus?.destination_stop?.city || busSelectedInstance?.destination}</p>
+                  <p className="text-sm font-light text-on-surface-variant mt-1">{busSelectedInstance?.bus?.operator?.name || 'Bus Operator'} · {busSelectedInstance?.bus?.bus_number || busSelectedInstance?.bus_number}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] uppercase tracking-widest text-secondary font-bold mb-2">Selected Fare</p>
@@ -378,3 +378,4 @@ export default function BusPassengerDetailsPage() {
     </main>
   );
 }
+

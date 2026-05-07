@@ -41,8 +41,8 @@ export default function FareSelectionPage() {
           const userClass = (searchQuery?.cabinClass || 'ECONOMY').toUpperCase();
           const classFiltered = normalized.filter(f => f.seat_class.toUpperCase() === userClass);
           
-          // Use class-filtered fares if any exist, otherwise show all (max 3)
-          setFares((classFiltered.length > 0 ? classFiltered : normalized).slice(0, 3));
+          // Only show fares for the selected cabin class
+          setFares(classFiltered.length > 0 ? classFiltered : normalized);
         } else {
           const fallback = (selectedFlight.fares || []).map(f => ({
             ...f,

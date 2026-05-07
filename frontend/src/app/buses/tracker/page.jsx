@@ -1,11 +1,11 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBookingStore } from '@/lib/store';
 import { busApi } from '@/lib/busApi';
 
-export default function BusTrackerPage() {
+function BusTrackerContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const busSelectedInstance = useBookingStore(state => state.busSelectedInstance);
@@ -467,5 +467,22 @@ export default function BusTrackerPage() {
         )}
       </AnimatePresence>
     </main>
+  );
+}
+
+export default function BusTrackerPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#fbf9fb] font-['Plus_Jakarta_Sans'] pb-32 pt-24">
+          <div className="flex flex-col items-center justify-center pt-32">
+            <div className="w-24 h-24 border-4 border-secondary/20 border-t-secondary rounded-full animate-spin"></div>
+            <p className="mt-8 text-[10px] font-black text-secondary uppercase tracking-[0.4em]">Loading Tracker...</p>
+          </div>
+        </main>
+      }
+    >
+      <BusTrackerContent />
+    </Suspense>
   );
 }

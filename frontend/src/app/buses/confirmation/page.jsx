@@ -1,11 +1,11 @@
 'use client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBookingStore, useAuthStore } from '@/lib/store';
 import { busApi } from '@/lib/busApi';
 
-export default function BusConfirmationPage() {
+function BusConfirmationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('booking_id');
@@ -415,5 +415,20 @@ export default function BusConfirmationPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function BusConfirmationPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="pt-40 flex flex-col items-center justify-center min-h-[60vh]">
+          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-6"></div>
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-outline">Loading Confirmation...</p>
+        </main>
+      }
+    >
+      <BusConfirmationContent />
+    </Suspense>
   );
 }
