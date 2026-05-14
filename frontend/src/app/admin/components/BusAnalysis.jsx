@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { busApi } from '@/lib/busApi';
-import { TrendingUp, Bus, Users, IndianRupee, Calendar, ChevronRight, BarChart3 } from 'lucide-react';
+import { TrendingUp, Bus, Users, IndianRupee, Calendar, ChevronRight, ChevronLeft, BarChart3, XCircle } from 'lucide-react';
 
 /* ─── Shared SVG chart primitives ─────────────────────────────────── */
 
@@ -55,12 +55,12 @@ const AreaChart = ({ points, height = 120, color = '#10b981', fill = '#d1fae5' }
   return (
     <svg viewBox={`0 0 100 ${height}`} className="w-full" style={{ height }} preserveAspectRatio="none">
       <defs>
-        <linearGradient id={`grad-${color.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`grad-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={fill} stopOpacity="0.8" />
           <stop offset="100%" stopColor={fill} stopOpacity="0.05" />
         </linearGradient>
       </defs>
-      <path d={areaD} fill={`url(#grad-${color.replace('#','')})`} />
+      <path d={areaD} fill={`url(#grad-${color.replace('#', '')})`} />
       <path d={pathD} fill="none" stroke={color} strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round" />
       {points.map((p, i) => (
         <circle key={i} cx={toX(i)} cy={toY(p.value)} r="1.2" fill={color} />
@@ -87,6 +87,106 @@ const DonutRing = ({ value, total, color = '#10b981' }) => {
   );
 };
 
+
+// Profit Loss Chart (Daily - Shows Max, hover shows all details)
+const ProfitLossChart = ({ bars, height = 160, onBarClick }) => {
+  const [hoveredIdx, setHoveredIdx] = useState(null);
+  const max = Math.max(...bars.map(b => Math.max(b.spend || 0, b.profit || 0, b.loss || 0)), 1);
+  const svgW = Math.max(bars.length * 60, 400);
+  return (
+    <div className="w-full overflow-x-auto relative" style={{ height: height + 30 }}>
+      <svg viewBox={`0 0 ${svgW} ${height + 30}`} className="h-full min-w-full overflow-visible">
+        {[0, 0.25, 0.5, 0.75, 1].map((r, i) => (
+          <line key={i} x1="0" x2={svgW} y1={height - r * (height - 20)} y2={height - r * (height - 20)} stroke="#f1f5f9" strokeWidth="1" />
+        ))}
+        {bars.map((bar, i) => {
+          const maxVal = Math.max(bar.spend || 0, bar.profit || 0, bar.loss || 0);
+          let color = '#3b82f6';
+          if (maxVal === bar.loss && bar.loss > 0) color = '#ef4444';
+          else if (maxVal === bar.profit && bar.profit > 0) color = '#10b981';
+
+          const barH = ((maxVal / max) * (height - 20));
+          const x = i * 60 + 20;
+          const isHovered = hoveredIdx === i;
+          return (
+            <g key={i}
+              onClick={() => onBarClick && onBarClick(bar)}
+              onMouseEnter={() => setHoveredIdx(i)}
+              onMouseLeave={() => setHoveredIdx(null)}
+              className={onBarClick ? 'cursor-pointer transition-opacity' : ''}
+              style={{ filter: bar.isSelected ? 'brightness(0.7) drop-shadow(0px 0px 4px rgba(16,185,129,0.5))' : 'none' }}
+            >
+              <rect x={x} y={height - barH - 4} width={36} height={barH} rx="6" fill={color} opacity={isHovered ? 1 : 0.9} />
+              {!isHovered && (
+                <text x={x + 18} y={height - barH - 8} textAnchor="middle" fontSize="9" fill="#64748b" fontWeight="700">
+                  ₹{maxVal}
+                </text>
+              )}
+              <text x={x + 18} y={height + 14} textAnchor="middle" fontSize="8" fill="#94a3b8" fontWeight="600">
+                {bar.label}
+              </text>
+              {/* Hover tooltip */}
+              {isHovered && (
+                <g>
+                  <rect x={x - 28} y={0} width={92} height={68} rx="8" fill="white" stroke="#e2e8f0" strokeWidth="1" filter="drop-shadow(0 2px 6px rgba(0,0,0,0.12))" />
+                  <text x={x + 18} y={18} textAnchor="middle" fontSize="10" fill="#3b82f6" fontWeight="800">
+                    Spend: ₹{bar.spend || 0}
+                  </text>
+                  <text x={x + 18} y={36} textAnchor="middle" fontSize="10" fill="#10b981" fontWeight="800">
+                    Profit: ₹{bar.profit || 0}
+                  </text>
+                  <text x={x + 18} y={54} textAnchor="middle" fontSize="10" fill="#ef4444" fontWeight="800">
+                    Loss: ₹{bar.loss || 0}
+                  </text>
+                </g>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+};
+
+// Triple Bar Chart (Instance - Shows 3 separate bars)
+const TripleBarChart = ({ bars, height = 160, onBarClick }) => {
+  const max = Math.max(...bars.flatMap(b => [b.spend || 0, b.profit || 0, b.loss || 0]), 1);
+  return (
+    <div className="w-full overflow-x-auto" style={{ height: height + 30 }}>
+      <svg viewBox={`0 0 ${Math.max(bars.length * 80, 400)} ${height + 30}`} className="h-full min-w-full overflow-visible">
+        {[0, 0.25, 0.5, 0.75, 1].map((r, i) => (
+          <line key={i} x1="0" x2={Math.max(bars.length * 80, 400)} y1={height - r * (height - 20)} y2={height - r * (height - 20)} stroke="#f1f5f9" strokeWidth="1" />
+        ))}
+        {bars.map((bar, i) => {
+          const gx = i * 80 + 20;
+          const sH = Math.max(((bar.spend || 0) / max) * (height - 20), 4);
+          const pH = Math.max(((bar.profit || 0) / max) * (height - 20), 4);
+          const lH = Math.max(((bar.loss || 0) / max) * (height - 20), 4);
+          return (
+            <g key={i} onClick={() => onBarClick && onBarClick(bar)} className={onBarClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''} style={{ filter: bar.isSelected ? 'brightness(0.7) drop-shadow(0px 0px 4px rgba(16,185,129,0.5))' : 'none' }}>
+              <rect x={gx} y={height - sH - 4} width={14} height={sH} rx="3" fill="#3b82f6" opacity="0.9" />
+              <text x={gx + 7} y={height - sH - 8} textAnchor="middle" fontSize="7" fill="#3b82f6" fontWeight="700">
+                ₹{bar.spend || 0}
+              </text>
+              <rect x={gx + 16} y={height - pH - 4} width={14} height={pH} rx="3" fill="#10b981" opacity="0.9" />
+              <text x={gx + 23} y={height - pH - 8} textAnchor="middle" fontSize="7" fill="#10b981" fontWeight="700">
+                ₹{bar.profit || 0}
+              </text>
+              <rect x={gx + 32} y={height - lH - 4} width={14} height={lH} rx="3" fill="#ef4444" opacity="0.9" />
+              <text x={gx + 39} y={height - lH - 8} textAnchor="middle" fontSize="7" fill="#ef4444" fontWeight="700">
+                ₹{bar.loss || 0}
+              </text>
+              <text x={gx + 23} y={height + 14} textAnchor="middle" fontSize="8" fill="#94a3b8" fontWeight="600">
+                {bar.label}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+};
+
 /* ─── Main Component ───────────────────────────────────────────────── */
 export default function BusAnalysis() {
   const [operators, setOperators] = useState([]);
@@ -95,6 +195,17 @@ export default function BusAnalysis() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [dailyAccounting, setDailyAccounting] = useState([]);
+  const [instanceAccounting, setInstanceAccounting] = useState([]);
+  const [selectedInstance, setSelectedInstance] = useState(null);
+  const [instanceBookings, setInstanceBookings] = useState([]);
+  const [bookingsPage, setBookingsPage] = useState(1);
+  const now = new Date();
+  const [selectedDate, setSelectedDate] = useState(now.toISOString());
+  const bookingsPerPage = 10;
+  const [dailyMonth, setDailyMonth] = useState(now.getMonth() + 1);
+  const [dailyYear, setDailyYear] = useState(now.getFullYear());
+  const [cancelModal, setCancelModal] = useState({ open: false, bookingId: null, reason: '', loading: false, result: null });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -105,18 +216,37 @@ export default function BusAnalysis() {
           busApi.admin.getBookings(1, 5),
           busApi.admin.getRevenueAnalytics(),
         ]);
+
         if (opData?.success) setOperators(opData.data || []);
-        if (tripData?.success) setUpcoming(tripData.data || []);
+        const upcomingTrips = tripData?.data || [];
+        if (tripData?.success) setUpcoming(upcomingTrips);
         if (bookData?.success) setBookings(bookData.data?.bookings || []);
         if (revData?.success) setRevenue(revData.data);
       } catch (err) {
-        console.error('Failed to fetch bus analysis', err);
+        console.error('Failed to fetch initial bus analysis', err);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
   }, []);
+
+  // Fetch Daily Accounting
+  useEffect(() => {
+    const fetchDailyAccounting = async () => {
+      try {
+        const data = await busApi.admin.getDailyAccountingAnalytics(dailyMonth, dailyYear);
+        if (data && data.length > 0) {
+          setDailyAccounting(data);
+        } else {
+          setDailyAccounting([]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch daily accounting', err);
+      }
+    };
+    fetchDailyAccounting();
+  }, [dailyMonth, dailyYear]);
 
   const requestDelete = (id) => setDeleteConfirmId(id);
   const cancelDelete = () => setDeleteConfirmId(null);
@@ -135,6 +265,74 @@ export default function BusAnalysis() {
       await busApi.admin.updateInstanceStatus(id, newStatus);
       setUpcoming(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
     } catch (err) { console.error('Status update failed', err); }
+  };
+
+
+
+  useEffect(() => {
+    if (!selectedDate) return;
+
+    const fetchInstancesForDate = async () => {
+      try {
+        const d = new Date(selectedDate);
+        const day = d.getDate();
+        const month = d.getMonth() + 1;
+        const year = d.getFullYear();
+
+        // Fetch all accounting records for that specific date directly
+        const accResults = await busApi.admin.getInstanceAccountingAnalytics(day, month, year);
+        setInstanceAccounting(accResults || []);
+      } catch (err) {
+        console.error("Failed to fetch instance accounting for date", err);
+        setInstanceAccounting([]);
+      }
+    };
+
+    fetchInstancesForDate();
+  }, [selectedDate]);
+
+  const handleDateClick = (bar) => {
+    if (bar.rawDate) {
+      setSelectedDate(bar.rawDate);
+      setSelectedInstance(null);
+    }
+  };
+
+  const fetchInstanceBookings = async (instanceId) => {
+    try {
+      const res = await busApi.admin.getInstanceBookings(instanceId);
+      setInstanceBookings(res || []);
+      setBookingsPage(1);
+    } catch (err) {
+      console.error('Failed to fetch instance bookings', err);
+    }
+  };
+
+  const handleInstanceClick = (bar) => {
+    if (bar.instanceId) {
+      setSelectedInstance(bar.instanceId);
+      fetchInstanceBookings(bar.instanceId);
+    }
+  };
+
+  const openCancelModal = (bookingId) => {
+    setCancelModal({ open: true, bookingId, reason: '', loading: false, result: null });
+  };
+
+  const closeCancelModal = () => {
+    setCancelModal({ open: false, bookingId: null, reason: '', loading: false, result: null });
+  };
+
+  const handleCancelBooking = async () => {
+    if (!cancelModal.reason.trim()) return;
+    setCancelModal(prev => ({ ...prev, loading: true }));
+    try {
+      await busApi.admin.cancelBooking(cancelModal.bookingId, cancelModal.reason);
+      setCancelModal(prev => ({ ...prev, loading: false, result: 'success' }));
+      if (selectedInstance) fetchInstanceBookings(selectedInstance);
+    } catch (err) {
+      setCancelModal(prev => ({ ...prev, loading: false, result: 'error', errorMsg: err.response?.data?.message || err.message }));
+    }
   };
 
   if (loading) {
@@ -178,6 +376,34 @@ export default function BusAnalysis() {
     return {
       label: d.toLocaleDateString('en-US', { weekday: 'short' }),
       value: bookings.filter(b => new Date(b.created_at).toDateString() === d.toDateString()).length,
+    };
+  });
+
+
+  // Generate bars for the selected month
+  const daysInMonth = new Date(dailyYear, dailyMonth, 0).getDate();
+  const monthlyBars = Array.from({ length: daysInMonth }, (_, i) => {
+    const day = i + 1;
+    const match = dailyAccounting.find(d => {
+      const date = new Date(d.date);
+      return date.getDate() === day && date.getMonth() + 1 === dailyMonth && date.getFullYear() === dailyYear;
+    });
+
+    // Create an artificial date string for selection if none exists
+    const dateStr = `${dailyYear}-${String(dailyMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00Z`;
+    const isSelected = selectedDate ? (
+      new Date(selectedDate).getDate() === day &&
+      new Date(selectedDate).getMonth() + 1 === dailyMonth &&
+      new Date(selectedDate).getFullYear() === dailyYear
+    ) : false;
+
+    return {
+      label: `${day} ${new Date(dailyYear, dailyMonth - 1).toLocaleString('default', { month: 'short' })}`,
+      spend: match ? match.total_spend : 0,
+      profit: match ? match.total_profit : 0,
+      loss: match ? match.total_loss : 0,
+      rawDate: match ? match.date : dateStr,
+      isSelected
     };
   });
 
@@ -233,6 +459,128 @@ export default function BusAnalysis() {
               </div>
             ))}
           </div>
+        </motion.div>
+      )}
+
+      {/* ── Accounting Charts Row ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="text-base font-black text-slate-900">Daily Accounting</h3>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Profit/Loss per day</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={dailyMonth}
+                onChange={(e) => setDailyMonth(Number(e.target.value))}
+                className="text-xs font-bold bg-slate-50 border border-slate-200 text-slate-600 rounded-md py-1 px-2 focus:outline-none focus:border-emerald-500"
+              >
+                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => (
+                  <option key={i + 1} value={i + 1}>{m}</option>
+                ))}
+              </select>
+              <select
+                value={dailyYear}
+                onChange={(e) => setDailyYear(Number(e.target.value))}
+                className="text-xs font-bold bg-slate-50 border border-slate-200 text-slate-600 rounded-md py-1 px-2 focus:outline-none focus:border-emerald-500"
+              >
+                {Array.from({ length: 5 }, (_, i) => now.getFullYear() - 1 + i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+              <span className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600 ml-2"><IndianRupee size={16} /></span>
+            </div>
+          </div>
+          <ProfitLossChart
+            onBarClick={handleDateClick}
+            bars={monthlyBars}
+            height={160}
+          />
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="text-base font-black text-slate-900">Instances: {selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</h3>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Click a bar group to view bookings</p>
+            </div>
+            <span className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600"><Bus size={16} /></span>
+          </div>
+          {instanceAccounting.length > 0 ? (
+            <>
+              <TripleBarChart
+                onBarClick={handleInstanceClick}
+                bars={instanceAccounting.map(t => ({
+                  label: t.bus_number || 'N/A',
+                  spend: t.spend_amount_total || 0,
+                  profit: t.profit_amount || 0,
+                  loss: t.loss_amount || 0,
+                  instanceId: t.instance_id,
+                  isSelected: t.instance_id === selectedInstance
+                }))}
+                height={160}
+              />
+              <div className="flex items-center gap-4 mt-4 justify-center">
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-blue-500" /><span className="text-[9px] font-bold text-slate-400 uppercase">Spend</span></div>
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-emerald-500" /><span className="text-[9px] font-bold text-slate-400 uppercase">Profit</span></div>
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm bg-red-500" /><span className="text-[9px] font-bold text-slate-400 uppercase">Loss</span></div>
+              </div>
+            </>
+          ) : <p className="text-slate-400 text-sm text-center py-10 italic">No instance accounting data.</p>}
+        </motion.div>
+      </div>
+
+      {/* Selected Instance Bookings */}
+      {selectedInstance && (
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+          <div className="px-6 py-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+            <div>
+              <h3 className="text-base font-black text-slate-900">Instance Bookings</h3>
+              <p className="text-xs text-slate-400">Manage bookings for the selected trip</p>
+            </div>
+            <button onClick={() => setSelectedInstance(null)} className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500"><XCircle size={18} /></button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-100 text-left bg-slate-50/50">
+                  <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">PNR</th>
+                  <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Passengers</th>
+                  <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Amount</th>
+                  <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
+                  <th className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {instanceBookings.length === 0 && <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-400 italic text-sm">No bookings found for this instance.</td></tr>}
+                {instanceBookings.slice((bookingsPage - 1) * bookingsPerPage, bookingsPage * bookingsPerPage).map(b => (
+                  <tr key={b.id} className="hover:bg-slate-50">
+                    <td className="px-6 py-4 text-sm font-bold text-slate-800">{b.pnr}</td>
+                    <td className="px-6 py-4 text-xs text-slate-600">{b.passengers?.length || 0} Pax</td>
+                    <td className="px-6 py-4 text-sm font-bold text-emerald-600">₹{b.total_amount}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${b.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{b.status}</span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {b.status !== 'CANCELLED' && (
+                        <button onClick={() => openCancelModal(b.id)} className="text-xs font-bold text-red-500 hover:text-red-700 hover:underline">Cancel</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {instanceBookings.length > bookingsPerPage && (
+            <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500">Page {bookingsPage} of {Math.ceil(instanceBookings.length / bookingsPerPage)}</span>
+              <div className="flex gap-2">
+                <button onClick={() => setBookingsPage(p => Math.max(1, p - 1))} disabled={bookingsPage === 1} className="p-1 rounded bg-white border border-slate-200 disabled:opacity-50"><ChevronLeft size={16} /></button>
+                <button onClick={() => setBookingsPage(p => Math.min(Math.ceil(instanceBookings.length / bookingsPerPage), p + 1))} disabled={bookingsPage === Math.ceil(instanceBookings.length / bookingsPerPage)} className="p-1 rounded bg-white border border-slate-200 disabled:opacity-50"><ChevronRight size={16} /></button>
+              </div>
+            </div>
+          )}
         </motion.div>
       )}
 
@@ -394,6 +742,82 @@ export default function BusAnalysis() {
           </table>
         </div>
       </motion.div>
+
+      {/* ── Cancel Booking Modal ── */}
+      {cancelModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md mx-4 overflow-hidden"
+          >
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-slate-100 bg-red-50 flex items-center gap-3">
+              <span className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center text-red-500">
+                <XCircle size={20} />
+              </span>
+              <div>
+                <h3 className="text-base font-black text-slate-900">Cancel Booking</h3>
+                <p className="text-xs text-slate-500">This action cannot be undone</p>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5">
+              {cancelModal.result === 'success' ? (
+                <div className="text-center py-4">
+                  <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-3">
+                    <TrendingUp size={24} className="text-emerald-600" />
+                  </div>
+                  <p className="text-base font-black text-slate-900">Booking Cancelled!</p>
+                  <p className="text-xs text-slate-400 mt-1">The booking has been successfully cancelled.</p>
+                  <button onClick={closeCancelModal} className="mt-5 px-6 py-2.5 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-slate-800 transition-colors">Close</button>
+                </div>
+              ) : cancelModal.result === 'error' ? (
+                <div className="text-center py-4">
+                  <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-3">
+                    <XCircle size={24} className="text-red-500" />
+                  </div>
+                  <p className="text-base font-black text-slate-900">Cancellation Failed</p>
+                  <p className="text-xs text-red-500 mt-1">{cancelModal.errorMsg || 'Something went wrong.'}</p>
+                  <button onClick={closeCancelModal} className="mt-5 px-6 py-2.5 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-slate-800 transition-colors">Close</button>
+                </div>
+              ) : (
+                <>
+                  <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Reason for Cancellation</label>
+                  <textarea
+                    value={cancelModal.reason}
+                    onChange={(e) => setCancelModal(prev => ({ ...prev, reason: e.target.value }))}
+                    placeholder="Enter the reason for cancelling this booking..."
+                    rows={3}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 resize-none transition-all"
+                  />
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
+            {!cancelModal.result && (
+              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+                <button
+                  onClick={closeCancelModal}
+                  disabled={cancelModal.loading}
+                  className="px-5 py-2.5 text-xs font-black uppercase tracking-widest text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors disabled:opacity-50"
+                >
+                  Go Back
+                </button>
+                <button
+                  onClick={handleCancelBooking}
+                  disabled={cancelModal.loading || !cancelModal.reason.trim()}
+                  className="px-5 py-2.5 text-xs font-black uppercase tracking-widest text-white bg-red-500 rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {cancelModal.loading ? 'Cancelling...' : 'Confirm Cancel'}
+                </button>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

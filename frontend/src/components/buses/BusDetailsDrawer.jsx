@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { busApi } from '@/lib/busApi';
 import { useAuthStore, useBookingStore } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, MapPin, Search } from 'lucide-react';
+import { ChevronDown, MapPin, Search, Icon } from 'lucide-react';
+import { steeringWheel } from '@lucide/lab';
 
 /**
  * SeatIcon - A realistic representation of a bus seat (Seater or Sleeper).
@@ -97,6 +98,35 @@ export default function BusDetailsDrawer({ isOpen, onClose, bus }) {
   const setBusSelectedInstance = useBookingStore(state => state.setBusSelectedInstance);
   const router = useRouter();
 
+  // --- Exact Time/Date Formatters (No Timezone Shifting) ---
+  const fmt24 = (iso) => {
+    if (!iso) return '--:--';
+    if (typeof iso !== 'string') return iso;
+    if (iso.includes('T')) return iso.split('T')[1].substring(0, 5);
+    return iso.substring(0, 5);
+  };
+
+  const fmtDate = (iso) => {
+    if (!iso) return '';
+    if (typeof iso !== 'string') return iso;
+    if (iso.includes('T')) {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return iso.split('T')[0];
+
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      // Using UTC methods ensures we show exactly what the backend sent without local shifting
+      const dayName = days[d.getUTCDay()];
+      const dayNum = String(d.getUTCDate()).padStart(2, '0');
+      const monthName = months[d.getUTCMonth()];
+      const year = d.getUTCFullYear();
+
+      return `${dayName}, ${dayNum} ${monthName} ${year}`;
+    }
+    return iso;
+  };
+
   // Prevention for accidental refresh/navigation
   useEffect(() => {
     const handleBeforeUnload = (e) => {
@@ -183,7 +213,7 @@ export default function BusDetailsDrawer({ isOpen, onClose, bus }) {
 
       if (!p.first_name?.trim() || !nameRegex.test(p.first_name)) seatErrors.first_name = true;
       if (!p.last_name?.trim() || !nameRegex.test(p.last_name)) seatErrors.last_name = true;
-      
+
       const pDob = p.date_of_birth ? new Date(p.date_of_birth) : null;
       if (!p.date_of_birth || (pDob && (pDob < minDob || pDob > maxDob))) seatErrors.date_of_birth = true;
       if (!resolvedGender) seatErrors.gender = true;
@@ -605,7 +635,7 @@ export default function BusDetailsDrawer({ isOpen, onClose, bus }) {
                                     {/* Steering Wheel / Driver Area */}
                                     {deck === 'LOWER' && (
                                       <div className="absolute top-4 right-8 flex flex-col items-center gap-1 opacity-20">
-                                        <span className="material-symbols-outlined text-4xl">brightness_7</span>
+                                        <Icon iconNode={steeringWheel} className="w-10 h-10" />
                                         <span className="text-[8px] font-black tracking-tighter uppercase">Driver</span>
                                       </div>
                                     )}
@@ -870,8 +900,8 @@ export default function BusDetailsDrawer({ isOpen, onClose, bus }) {
                           {boardingPoints.map((point, idx) => (
                             <div key={point.id} className="flex gap-4 group">
                               <div className="w-12 flex-shrink-0 text-right">
-                                <p className="text-[11px] font-bold text-gray-700">{new Date(point.pickup_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}</p>
-                                <p className="text-[9px] text-gray-400 mt-0.5">{new Date(point.pickup_time).toLocaleDateString([], { day: '2-digit', month: 'short' })}</p>
+                                <p className="text-[11px] font-bold text-gray-700">{fmt24(point.pickup_time)}</p>
+                                <p className="text-[9px] text-gray-400 mt-0.5">{fmtDate(point.pickup_time)}</p>
                               </div>
                               <div className="flex flex-col items-center">
                                 <div className="w-2 h-2 rounded-full bg-gray-300 mt-1" />
@@ -895,8 +925,8 @@ export default function BusDetailsDrawer({ isOpen, onClose, bus }) {
                           {droppingPoints.map((point, idx) => (
                             <div key={point.id} className="flex gap-4 group">
                               <div className="w-12 flex-shrink-0 text-right">
-                                <p className="text-[11px] font-bold text-gray-700">{new Date(point.drop_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}</p>
-                                <p className="text-[9px] text-gray-400 mt-0.5">{new Date(point.drop_time).toLocaleDateString([], { day: '2-digit', month: 'short' })}</p>
+                                <p className="text-[11px] font-bold text-gray-700">{fmt24(point.drop_time)}</p>
+                                <p className="text-[9px] text-gray-400 mt-0.5">{fmtDate(point.drop_time)}</p>
                               </div>
                               <div className="flex flex-col items-center">
                                 <div className="w-2 h-2 rounded-full bg-gray-300 mt-1" />
@@ -924,7 +954,7 @@ export default function BusDetailsDrawer({ isOpen, onClose, bus }) {
                               <div className="flex flex-col">
                                 <p className="text-[11px] font-bold text-gray-700 leading-tight">{stop.city || stop.stop_name}</p>
                                 <p className="text-[9px] text-gray-400 font-bold uppercase mt-1 tracking-tight">
-                                  {stop.city ? stop.stop_name : ''} {new Date(stop.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                  {stop.city ? stop.stop_name : ''} {fmt24(stop.time)}
                                 </p>
                               </div>
                               {idx !== routeData.length - 1 && (
@@ -1013,7 +1043,7 @@ export default function BusDetailsDrawer({ isOpen, onClose, bus }) {
                           >
                             <div className="flex items-center gap-4">
                               <span className="text-[11px] font-black text-gray-700 w-10 text-left">
-                                {new Date(point.pickup_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                {fmt24(point.pickup_time)}
                               </span>
                               <div className="text-left">
                                 <p className="text-[11px] font-black text-primary leading-tight">{point.stop_name}</p>
@@ -1051,7 +1081,7 @@ export default function BusDetailsDrawer({ isOpen, onClose, bus }) {
                           >
                             <div className="flex items-center gap-4">
                               <span className="text-[11px] font-black text-gray-700 w-10 text-left">
-                                {new Date(point.drop_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                {fmt24(point.drop_time)}
                               </span>
                               <div className="text-left">
                                 <p className="text-[11px] font-black text-primary leading-tight">{point.stop_name}</p>
@@ -1202,7 +1232,7 @@ export default function BusDetailsDrawer({ isOpen, onClose, bus }) {
                         <p className="text-[9px] font-black text-outline uppercase tracking-widest leading-none mb-1">Boarding</p>
                         <p className="text-[13px] font-black text-primary leading-tight">{boardingPoint?.stop_name || 'Select Point'}</p>
                         <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tight">
-                          {boardingPoint ? new Date(boardingPoint.pickup_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'}
+                          {boardingPoint ? `${fmtDate(boardingPoint.pickup_time)} • ${fmt24(boardingPoint.pickup_time)}` : '--:--'}
                           {boardingPoint?.city && ` • ${boardingPoint.city}`}
                         </p>
                       </div>
@@ -1212,7 +1242,7 @@ export default function BusDetailsDrawer({ isOpen, onClose, bus }) {
                         <p className="text-[9px] font-black text-outline uppercase tracking-widest leading-none mb-1">Dropping</p>
                         <p className="text-[13px] font-black text-primary leading-tight">{droppingPoint?.stop_name || 'Select Point'}</p>
                         <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tight">
-                          {droppingPoint ? new Date(droppingPoint.drop_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'}
+                          {droppingPoint ? `${fmtDate(droppingPoint.drop_time)} • ${fmt24(droppingPoint.drop_time)}` : '--:--'}
                           {droppingPoint?.city && ` • ${droppingPoint.city}`}
                         </p>
                       </div>

@@ -6,15 +6,21 @@ import { motion } from 'framer-motion';
 export default function BusTemplateForm({ initialData = {}, dropdowns = {}, onSubmit, onCancel, submitting }) {
   const formatTime = (timeStr) => {
     if (!timeStr) return '';
-    // If it's a full ISO string (e.g., 1970-01-01T23:00:00Z), extract HH:mm
+    let hours, minutes;
     if (timeStr.includes('T')) {
       const date = new Date(timeStr);
-      if (!isNaN(date.getTime())) {
-        return date.toISOString().substring(11, 16);
-      }
+      if (isNaN(date.getTime())) return timeStr;
+      hours = date.getUTCHours();
+      minutes = date.getUTCMinutes();
+    } else {
+      const parts = timeStr.split(':');
+      hours = parseInt(parts[0], 10);
+      minutes = parseInt(parts[1], 10);
     }
-    // If it's already HH:mm:ss, just take HH:mm
-    return timeStr.substring(0, 5);
+    if (isNaN(hours) || isNaN(minutes)) return timeStr;
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const h12 = hours % 12 || 12;
+    return `${h12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
   };
 
   const [formData, setFormData] = useState({
@@ -59,7 +65,19 @@ export default function BusTemplateForm({ initialData = {}, dropdowns = {}, onSu
     const formatToISO = (time) => {
       if (!time) return null;
       if (time.includes('T')) return time;
-      return `1970-01-01T${time}:00Z`;
+      
+      let finalTime = time.trim();
+      // Handle AM/PM conversion to 24-hour format
+      const match = finalTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+      if (match) {
+        let hours = parseInt(match[1], 10);
+        const minutes = match[2];
+        const modifier = match[3].toUpperCase();
+        if (modifier === 'PM' && hours < 12) hours += 12;
+        if (modifier === 'AM' && hours === 12) hours = 0;
+        finalTime = `${hours.toString().padStart(2, '0')}:${minutes}`;
+      }
+      return `1970-01-01T${finalTime}:00Z`;
     };
 
     const payload = {
@@ -154,13 +172,13 @@ export default function BusTemplateForm({ initialData = {}, dropdowns = {}, onSu
               {errors.destination_stop_id && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.destination_stop_id}</p>}
             </div>
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Dep. Time (HH:MM)</label>
-              <input type="time" className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm font-bold focus:outline-none ${errors.departure_time ? 'border-red-400' : 'border-slate-200'}`} value={formData.departure_time} onChange={e => {setFormData({...formData, departure_time: e.target.value}); if(errors.departure_time) setErrors({...errors, departure_time: null})}} />
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Dep. Time (e.g. 02:30 PM)</label>
+              <input type="text" className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm font-bold focus:outline-none ${errors.departure_time ? 'border-red-400' : 'border-slate-200'}`} placeholder="02:30 PM" value={formData.departure_time} onChange={e => {setFormData({...formData, departure_time: e.target.value}); if(errors.departure_time) setErrors({...errors, departure_time: null})}} />
               {errors.departure_time && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.departure_time}</p>}
             </div>
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Arr. Time (HH:MM)</label>
-              <input type="time" className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm font-bold focus:outline-none ${errors.arrival_time ? 'border-red-400' : 'border-slate-200'}`} value={formData.arrival_time} onChange={e => {setFormData({...formData, arrival_time: e.target.value}); if(errors.arrival_time) setErrors({...errors, arrival_time: null})}} />
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Arr. Time (e.g. 05:30 PM)</label>
+              <input type="text" className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm font-bold focus:outline-none ${errors.arrival_time ? 'border-red-400' : 'border-slate-200'}`} placeholder="05:30 PM" value={formData.arrival_time} onChange={e => {setFormData({...formData, arrival_time: e.target.value}); if(errors.arrival_time) setErrors({...errors, arrival_time: null})}} />
               {errors.arrival_time && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.arrival_time}</p>}
             </div>
             <div className="col-span-2">

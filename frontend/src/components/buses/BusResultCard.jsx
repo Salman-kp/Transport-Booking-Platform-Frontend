@@ -31,11 +31,17 @@ export default function BusResultCard({ bus, onSelect }) {
     return 'bg-red-600';
   };
 
-  // 24-hour time formatter (en-GB locale)
+  // Exact time extractor (extracts HH:mm exactly as sent from backend)
   const fmt24 = (iso) => {
     if (!iso) return '--:--';
-    const d = new Date(iso);
-    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+    if (typeof iso !== 'string') return iso;
+    
+    // If ISO string (e.g., 2026-04-15T21:30:00Z), extract HH:mm part directly
+    if (iso.includes('T')) {
+      return iso.split('T')[1].substring(0, 5);
+    }
+    // If already a time string (e.g., 21:30:00), take first 5 chars
+    return iso.substring(0, 5);
   };
 
   // Journey duration calculation
