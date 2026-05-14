@@ -139,6 +139,24 @@ function BusConfirmationContent() {
 
   const isCancelled = bookingData.status === 'CANCELLED';
 
+  const departureDateStr = selectedBoarding?.pickup_time || bookingData.departure_at;
+  let showCancelButton = !isCancelled;
+  let disableCancelButton = false;
+
+  if (departureDateStr && !isCancelled) {
+    const depDate = new Date(departureDateStr);
+    const currDate = new Date();
+    
+    depDate.setHours(0, 0, 0, 0);
+    currDate.setHours(0, 0, 0, 0);
+
+    if (depDate.getTime() === currDate.getTime()) {
+      disableCancelButton = true;
+    } else if (depDate.getTime() < currDate.getTime()) {
+      showCancelButton = false;
+    }
+  }
+
   return (
     <div className="bg-[#f9f9f9] min-h-screen pb-32 md:pb-20 pt-24 font-['Plus_Jakarta_Sans']">
       <main className="max-w-[1280px] mx-auto p-4 md:p-8">
@@ -301,10 +319,15 @@ function BusConfirmationContent() {
             <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm p-8">
               <h4 className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] mb-6">Booking Actions</h4>
               <div className="space-y-4">
-                {!isCancelled && (
+                {showCancelButton && (
                   <button
                     onClick={() => { setCancelStep(1); setShowCancelModal(true); }}
-                    className="w-full border border-red-100 text-red-500 font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:bg-red-50 transition-all active:scale-95"
+                    disabled={disableCancelButton}
+                    className={`w-full border font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-all ${
+                      disableCancelButton
+                        ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed opacity-70'
+                        : 'border-red-100 text-red-500 hover:bg-red-50 active:scale-95'
+                    }`}
                   >
                     <span className="material-symbols-outlined text-xl">cancel</span>
                     Cancel Booking

@@ -118,6 +118,26 @@ export const busApi = {
       const { data } = await api.get('/buses/admin/bookings', { params: { page, limit } });
       return data;
     },
+    cancelBooking: async (bookingId, reason) => {
+      const { data } = await api.post(`/buses/admin/bookings/${bookingId}/cancel`, { reason });
+      return data;
+    },
+    getDailyAccountingAnalytics: async (month, year) => {
+      const { data } = await api.get('/buses/admin/analytics/daily-accounting', {
+        params: { month, year }
+      });
+      return data?.data || data;
+    },
+    getInstanceAccountingAnalytics: async (day, month, year) => {
+      const { data } = await api.get('/buses/admin/analytics/instances/accounting', {
+        params: { day, month, year }
+      });
+      return data?.data || data;
+    },
+    getInstanceBookings: async (instanceId) => {
+      const { data } = await api.get(`/buses/admin/instances/${instanceId}/bookings`);
+      return data?.data || data;
+    },
 
     // Bus Instance Management
     deleteInstance: async (id) => {
